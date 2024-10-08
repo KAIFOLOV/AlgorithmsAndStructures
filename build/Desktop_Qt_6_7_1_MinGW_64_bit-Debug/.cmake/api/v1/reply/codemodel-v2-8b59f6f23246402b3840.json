@@ -1,0 +1,79 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-b70f10914377a69407e7.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "AlgorithmsAndStructures",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "AlgorithmsAndStructures::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-AlgorithmsAndStructures-Debug-06628c868d2b6ab114de.json",
+					"name" : "AlgorithmsAndStructures",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "AlgorithmsAndStructures_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-AlgorithmsAndStructures_autogen-Debug-0cc4a0cb89e49dff7685.json",
+					"name" : "AlgorithmsAndStructures_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "AlgorithmsAndStructures_autogen_timestamp_deps::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-AlgorithmsAndStructures_autogen_timestamp_deps-Debug-38e13fb8f8f4667386e2.json",
+					"name" : "AlgorithmsAndStructures_autogen_timestamp_deps",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/\u041a\u0441\u0435\u043d\u0438\u044f/Documents/AlgorithmsAndStructures/build/Desktop_Qt_6_7_1_MinGW_64_bit-Debug",
+		"source" : "C:/Users/\u041a\u0441\u0435\u043d\u0438\u044f/Documents/AlgorithmsAndStructures"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}

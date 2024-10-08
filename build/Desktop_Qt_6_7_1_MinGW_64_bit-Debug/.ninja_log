@@ -1,0 +1,8 @@
+# ninja log v5
+0	71	7500932838755407	AlgorithmsAndStructures_autogen/timestamp	3fd346ed67604681
+0	71	7500932838755407	AlgorithmsAndStructures_autogen/mocs_compilation.cpp	3fd346ed67604681
+0	71	7500932838755407	C:/Users/Ксения/Documents/AlgorithmsAndStructures/build/Desktop_Qt_6_7_1_MinGW_64_bit-Debug/AlgorithmsAndStructures_autogen/timestamp	3fd346ed67604681
+0	71	7500932838755407	C:/Users/Ксения/Documents/AlgorithmsAndStructures/build/Desktop_Qt_6_7_1_MinGW_64_bit-Debug/AlgorithmsAndStructures_autogen/mocs_compilation.cpp	3fd346ed67604681
+73	98	7500932839195409	CMakeFiles/AlgorithmsAndStructures.dir/AlgorithmsAndStructures_autogen/mocs_compilation.cpp.obj	fbe091f39a9112c
+73	102	7500932839235408	CMakeFiles/AlgorithmsAndStructures.dir/main.cpp.obj	8f3f892800cd10c1
+102	162	7500932839807545	AlgorithmsAndStructures.exe	373b1c8ca83920de
