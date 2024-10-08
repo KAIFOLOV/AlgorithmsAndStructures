@@ -14,6 +14,7 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
 
 add_executable(AlgorithmsAndStructures
   main.cpp
+  multiphasesorter.h multiphasesorter.cpp
 )
 target_link_libraries(AlgorithmsAndStructures Qt${QT_VERSION_MAJOR}::Core)
 
