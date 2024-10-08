@@ -1,2 +1,0 @@
-set(__QT_DEPLOY_TARGET_AlgorithmsAndStructures_FILE C:/Users/Ксения/Documents/AlgorithmsAndStructures/build/Desktop_Qt_6_7_1_MinGW_64_bit-Debug/AlgorithmsAndStructures.exe)
-set(__QT_DEPLOY_TARGET_AlgorithmsAndStructures_RUNTIME_DLLS C:/Qt/6.7.1/mingw_64/bin/Qt6Core.dll)
