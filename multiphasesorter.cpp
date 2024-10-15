@@ -8,22 +8,33 @@ void MultiPhaseSorter::sort(const std::string &inputFile, const int numFiles)
 {
     std::vector<std::string> tempFiles;
     createAuxiliaryFiles(tempFiles, numFiles);
+
     splitData(inputFile, tempFiles);
 
-    // Отладочный вывод: содержимое временных файлов после разбиения
-    // std::cout << "Temporary files after splitting:" << std::endl;
-    // for (const auto &tempFile : tempFiles) {
-    //     std::ifstream checkFile(tempFile);
-    //     int val;
-    //     std::cout << "Contents of " << tempFile << ": ";
-    //     while (checkFile >> val) {
-    //         std::cout << val << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
+#ifdef DEBUG
+    std::cout << "Temporary files after splitting:" << std::endl;
+    for (const auto &tempFile : tempFiles) {
+        std::ifstream checkFile(tempFile);
+        int val;
+        std::cout << "Contents of " << tempFile << ": ";
+        while (checkFile >> val) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl;
+    }
+#endif
 
-    mergeSortedFiles(tempFiles, inputFile);
+    multiPhaseMerge(tempFiles, inputFile);
     cleanupTempFiles(tempFiles);
+}
+
+std::vector<int> MultiPhaseSorter::generateFibonacciDistribution(const int numFiles)
+{
+    std::vector<int> fibSeries = { 1, 1 };
+    while (fibSeries.size() < numFiles) {
+        fibSeries.push_back(fibSeries[fibSeries.size() - 1] + fibSeries[fibSeries.size() - 2]);
+    }
+    return fibSeries;
 }
 
 void MultiPhaseSorter::createAuxiliaryFiles(std::vector<std::string> &tempFiles, int numFiles)
@@ -41,85 +52,124 @@ void MultiPhaseSorter::splitData(const std::string &inputFile, std::vector<std::
         return;
     }
 
-    std::vector<int> buffer;
+    const auto fibSeries = generateFibonacciDistribution(tempFiles.size());
+
     int number;
-    int fileIndex = 0;
+    std::vector<int> buffer;
 
-    int estimatedSize = 0;
-    while (inFile >> number) {
-        ++estimatedSize;
+    for (int fileIndex = 0; fileIndex < tempFiles.size(); ++fileIndex) {
+        int currentSeriesSize = fibSeries[fileIndex];
+        buffer.clear();
+
+        while (buffer.size() < currentSeriesSize && inFile >> number) {
+            buffer.push_back(number);
+        }
+
+        if (!buffer.empty()) {
+            std::sort(buffer.begin(), buffer.end());
+            writeToFile(buffer, tempFiles[fileIndex]);
+        }
+
+        while (buffer.size() < currentSeriesSize) {
+            addFakeSegment(tempFiles[fileIndex]);
+            ++currentSeriesSize;
+        }
     }
-
-    inFile.clear();
-    inFile.seekg(0);
-
-    int maxBufferSize = std::max(100, static_cast<int>(estimatedSize / tempFiles.size()));
-
-    // std::cout << "Buffer size set to: " << maxBufferSize << std::endl;
 
     while (inFile >> number) {
         buffer.push_back(number);
-
-        if (buffer.size() >= maxBufferSize) {
-            sortAndWriteToFile(buffer, tempFiles[fileIndex]);
-            fileIndex = (fileIndex + 1) % tempFiles.size();
-        }
     }
 
     if (!buffer.empty()) {
-        sortAndWriteToFile(buffer, tempFiles[fileIndex]);
+        std::sort(buffer.begin(), buffer.end());
+        writeToFile(buffer, tempFiles.back());
     }
 }
 
-void MultiPhaseSorter::sortAndWriteToFile(std::vector<int> &buffer, const std::string &fileName)
+void MultiPhaseSorter::addFakeSegment(const std::string &fileName)
 {
-    std::sort(buffer.begin(), buffer.end());
+    std::ofstream outFile(fileName, std::ios::app);
+    if (!outFile) {
+        std::cerr << "Error: Could not open file " << fileName << " to add dummy segment."
+                  << std::endl;
+        return;
+    }
+
+    outFile << std::numeric_limits<int>::max() << " ";
+    outFile << std::endl;
+}
+
+void MultiPhaseSorter::writeToFile(std::vector<int> &buffer, const std::string &fileName)
+{
     std::ofstream outFile(fileName);
+    if (!outFile) {
+        std::cerr << "Error: Could not open file " << fileName << " for writing." << std::endl;
+        return;
+    }
+
     for (int num : buffer) {
         outFile << num << " ";
     }
-    buffer.clear();
+    outFile << std::endl;
 }
 
-void MultiPhaseSorter::mergeSortedFiles(const std::vector<std::string> &tempFiles,
-                                        const std::string &inputFile)
+void MultiPhaseSorter::multiPhaseMerge(const std::vector<std::string> &tempFiles,
+                                       const std::string &outputFile)
 {
+    const int n = tempFiles.size();
+
     std::vector<std::ifstream> fileStreams;
-    for (const auto &fileName : tempFiles) {
-        fileStreams.emplace_back(fileName);
-    }
-
-    std::ofstream outFile(inputFile);
-    bool finished = false;
-    std::vector<int> currentNumbers(tempFiles.size(), std::numeric_limits<int>::max());
-
-    for (int i = 0; i < tempFiles.size(); ++i) {
-        if (fileStreams[i] >> currentNumbers[i]) {
-            continue;
+    for (int i = 0; i < n; ++i) {
+        fileStreams.emplace_back(tempFiles[i]);
+        if (!fileStreams.back().is_open()) {
+            std::cerr << "Error: Could not open temp file " << tempFiles[i] << std::endl;
+            return;
         }
     }
 
-    while (!finished) {
+    std::ofstream outFile(outputFile);
+    if (!outFile.is_open()) {
+        std::cerr << "Error: Could not open output file " << outputFile << std::endl;
+        return;
+    }
+
+    std::vector<int> currentNumbers(n, std::numeric_limits<int>::max());
+    std::vector<bool> hasValue(n, false);
+
+    for (int i = 0; i < n; ++i) {
+        if (fileStreams[i] >> currentNumbers[i]) {
+            hasValue[i] = true;
+        }
+    }
+
+    while (true) {
         int minNumber = std::numeric_limits<int>::max();
         int minIndex = -1;
 
-        for (int i = 0; i < tempFiles.size(); ++i) {
-            if (currentNumbers[i] < minNumber) {
+        for (int i = 0; i < n; ++i) {
+            if (hasValue[i] && currentNumbers[i] < minNumber) {
                 minNumber = currentNumbers[i];
                 minIndex = i;
             }
         }
 
         if (minIndex == -1) {
-            finished = true;
+            break;
+        }
+
+        outFile << minNumber << " ";
+
+        if (fileStreams[minIndex] >> currentNumbers[minIndex]) {
         } else {
-            outFile << minNumber << " ";
-            if (!(fileStreams[minIndex] >> currentNumbers[minIndex])) {
-                currentNumbers[minIndex] =
-                 std::numeric_limits<int>::max();
-            }
+            hasValue[minIndex] = false;
+            currentNumbers[minIndex] = std::numeric_limits<int>::max();
         }
     }
+
+    for (auto &stream : fileStreams) {
+        stream.close();
+    }
+    outFile.close();
 }
 
 void MultiPhaseSorter::cleanupTempFiles(const std::vector<std::string> &tempFiles)

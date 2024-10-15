@@ -41,23 +41,15 @@ bool isFileContainsSortedArray(const std::string &fileName)
     }
 
     int previousNumber;
-    bool firstNumber = true;
     int currentNumber;
 
+    inFile >> previousNumber;
     while (inFile >> currentNumber) {
-        if (firstNumber) {
-            previousNumber = currentNumber;
-            firstNumber = false;
-            continue;
-        }
-
         if (currentNumber < previousNumber) {
             return false;
         }
-
         previousNumber = currentNumber;
     }
-
     return true;
 }
 
@@ -73,7 +65,7 @@ int createAndSortFile(const std::string &fileName, const int numbersCount, const
         return -3;
     }
 
-    MultiPhaseSorter::sort(fileName, 2);
+    MultiPhaseSorter::sort(fileName);
 
     if (!isFileContainsSortedArray(fileName)) {
         return -4;
@@ -90,7 +82,7 @@ int main()
 
     createFileWithRandomNumbers("lol.txt", numbersCount, maxNumberValue);
 
-    for (int i = 1; i < 11; i++) {
+    for (int i = 1; i < 12; i++) {
         switch (createAndSortFile(fileName, numbersCount, maxNumberValue)) {
         case 1:
             std::cout << "Test " << i << " passed." << std::endl;
