@@ -1,7 +1,5 @@
 #include "multiphasesorter.h"
-#include <algorithm>
 #include <fstream>
-#include <limits>
 #include <iostream>
 
 void MultiPhaseSorter::sort(const std::string &inputFile, const int numFiles)
@@ -9,167 +7,117 @@ void MultiPhaseSorter::sort(const std::string &inputFile, const int numFiles)
     std::vector<std::string> tempFiles;
     createAuxiliaryFiles(tempFiles, numFiles);
 
-    splitData(inputFile, tempFiles);
+    splitData(inputFile, tempFiles, numFiles);
 
-#ifdef DEBUG
-    std::cout << "Temporary files after splitting:" << std::endl;
-    for (const auto &tempFile : tempFiles) {
-        std::ifstream checkFile(tempFile);
-        int val;
-        std::cout << "Contents of " << tempFile << ": ";
-        while (checkFile >> val) {
-            std::cout << val << " ";
-        }
-        std::cout << std::endl;
-    }
-#endif
-
-    multiPhaseMerge(tempFiles, inputFile);
-    cleanupTempFiles(tempFiles);
-}
-
-std::vector<int> MultiPhaseSorter::generateFibonacciDistribution(const int numFiles)
-{
-    std::vector<int> fibSeries = { 1, 1 };
-    while (fibSeries.size() < numFiles) {
-        fibSeries.push_back(fibSeries[fibSeries.size() - 1] + fibSeries[fibSeries.size() - 2]);
-    }
-    return fibSeries;
+    // multiPhaseMerge(tempFiles, inputFile);
+    // cleanupTempFiles(tempFiles);
 }
 
 void MultiPhaseSorter::createAuxiliaryFiles(std::vector<std::string> &tempFiles, int numFiles)
 {
-    for (int i = 0; i < numFiles; ++i) {
+    for (int i = 0; i < numFiles - 1; ++i) {
         tempFiles.push_back("temp" + std::to_string(i) + ".txt");
     }
 }
 
-void MultiPhaseSorter::splitData(const std::string &inputFile, std::vector<std::string> &tempFiles)
+void MultiPhaseSorter::splitData(const std::string &inputFile,
+                                 std::vector<std::string> &tempFiles,
+                                 int n)
 {
     std::ifstream inFile(inputFile);
-    if (!inFile) {
-        std::cerr << "Error: Could not open input file " << inputFile << std::endl;
+    if (!inFile.is_open()) {
+        std::cerr << "Error: Could not open input file.\n";
         return;
     }
 
-    const auto fibSeries = generateFibonacciDistribution(tempFiles.size());
-
-    int number;
-    std::vector<int> buffer;
-
-    for (int fileIndex = 0; fileIndex < tempFiles.size(); ++fileIndex) {
-        int currentSeriesSize = fibSeries[fileIndex];
-        buffer.clear();
-
-        while (buffer.size() < currentSeriesSize && inFile >> number) {
-            buffer.push_back(number);
-        }
-
-        if (!buffer.empty()) {
-            std::sort(buffer.begin(), buffer.end());
-            writeToFile(buffer, tempFiles[fileIndex]);
-        }
-
-        while (buffer.size() < currentSeriesSize) {
-            addFakeSegment(tempFiles[fileIndex]);
-            ++currentSeriesSize;
-        }
-    }
-
-    while (inFile >> number) {
-        buffer.push_back(number);
-    }
-
-    if (!buffer.empty()) {
-        std::sort(buffer.begin(), buffer.end());
-        writeToFile(buffer, tempFiles.back());
-    }
-}
-
-void MultiPhaseSorter::addFakeSegment(const std::string &fileName)
-{
-    std::ofstream outFile(fileName, std::ios::app);
-    if (!outFile) {
-        std::cerr << "Error: Could not open file " << fileName << " to add dummy segment."
-                  << std::endl;
-        return;
-    }
-
-    outFile << std::numeric_limits<int>::max() << " ";
-    outFile << std::endl;
-}
-
-void MultiPhaseSorter::writeToFile(std::vector<int> &buffer, const std::string &fileName)
-{
-    std::ofstream outFile(fileName);
-    if (!outFile) {
-        std::cerr << "Error: Could not open file " << fileName << " for writing." << std::endl;
-        return;
-    }
-
-    for (int num : buffer) {
-        outFile << num << " ";
-    }
-    outFile << std::endl;
-}
-
-void MultiPhaseSorter::multiPhaseMerge(const std::vector<std::string> &tempFiles,
-                                       const std::string &outputFile)
-{
-    const int n = tempFiles.size();
-
-    std::vector<std::ifstream> fileStreams;
-    for (int i = 0; i < n; ++i) {
-        fileStreams.emplace_back(tempFiles[i]);
-        if (!fileStreams.back().is_open()) {
-            std::cerr << "Error: Could not open temp file " << tempFiles[i] << std::endl;
+    std::vector<std::ofstream> tempFileStreams(n - 1);
+    for (int i = 0; i < n - 1; ++i) {
+        tempFileStreams[i].open(tempFiles[i]);
+        if (!tempFileStreams[i].is_open()) {
+            std::cerr << "Error: Could not open temp file " << tempFiles[i] << " for writing.\n";
             return;
         }
     }
 
-    std::ofstream outFile(outputFile);
-    if (!outFile.is_open()) {
-        std::cerr << "Error: Could not open output file " << outputFile << std::endl;
-        return;
-    }
-
-    std::vector<int> currentNumbers(n, std::numeric_limits<int>::max());
-    std::vector<bool> hasValue(n, false);
-
-    for (int i = 0; i < n; ++i) {
-        if (fileStreams[i] >> currentNumbers[i]) {
-            hasValue[i] = true;
-        }
-    }
+    int L = 1;
+    std::vector<int> ip(n - 2, 1); // Идеальное распределение
+    std::vector<int> ms(n - 2, 1); // Количество отрезков для каждого файла
+    ip.push_back(0);
+    ms.push_back(0);
 
     while (true) {
-        int minNumber = std::numeric_limits<int>::max();
-        int minIndex = -1;
+        std::vector<int> currentSegments;
+        int i = 0; // Индекс файла
 
-        for (int i = 0; i < n; ++i) {
-            if (hasValue[i] && currentNumbers[i] < minNumber) {
-                minNumber = currentNumbers[i];
-                minIndex = i;
+        // Основной цикл разбиения
+        while (true) {
+            int currentNumber;
+            if (!(inFile >> currentNumber)) {
+                break;
+            }
+
+            // Начинаем формировать фрагмент
+            currentSegments.push_back(currentNumber);
+
+            while (inFile >> currentNumber) {
+                // Если текущее число больше предыдущего, продолжаем фрагмент
+                if (currentNumber < currentSegments.back())
+                    break;
+
+                currentSegments.push_back(currentNumber);
+            }
+
+            for (auto value : currentSegments) {
+                tempFileStreams[i] << value;
+            }
+
+            ms[i]--; // Уменьшаем счетчик отрезков для текущего файла
+
+            // Переход к следующему файлу
+            if (ms[i] < ms[i + 1] && i < n - 2) {
+                i++; // Переходим к следующему файлу
+            } else {
+                if (ms[i] == 0) {
+                    // Если все отрезки в текущем файле закончились, переходим к пересчету //
+                    // Переходим на этап 4
+                    break;
+                } else {
+                    i = 0; // Возвращаемся к первому файлу
+                }
             }
         }
 
-        if (minIndex == -1) {
-            break;
+        // 4. Пересчет уровня и значений в массивах ip и ms
+        L++; // Увеличиваем уровень
+        int ip0 = ip[0]; // Сохраняем значение ip[0]
+        i = 0; // Сбрасываем индекс
+
+        for (int k = 0; k < n - 2; ++k) {
+            ms[k] = ip[k + 1] - ip[k] + ip0; // Пересчитываем ms
+            ip[k] = ip[k + 1] + ip0; // Пересчитываем ip
         }
 
-        outFile << minNumber << " ";
+        // Проверка на завершение работы
+        if (ms[n - 2] == 0) { // Если все отрезки обработаны
+            break; // Выходим из основного цикла
+        }
 
-        if (fileStreams[minIndex] >> currentNumbers[minIndex]) {
-        } else {
-            hasValue[minIndex] = false;
-            currentNumbers[minIndex] = std::numeric_limits<int>::max();
+        for (int j = 0; j < n - 1; ++j) {
+            tempFileStreams[j].close();
+            tempFileStreams[j].open(tempFiles[j], std::ios::app);
+            if (!tempFileStreams[j].is_open()) {
+                std::cerr << "Error: Could not open temp file " << tempFiles[j] << " for writing.\n";
+                return;
+            }
         }
     }
 
-    for (auto &stream : fileStreams) {
-        stream.close();
+    // Закрываем все файлы и исходный файл
+    for (int i = 0; i < n - 1; ++i) {
+        tempFileStreams[i].close();
     }
-    outFile.close();
+
+    inFile.close();
 }
 
 void MultiPhaseSorter::cleanupTempFiles(const std::vector<std::string> &tempFiles)
