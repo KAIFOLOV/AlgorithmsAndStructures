@@ -10,7 +10,7 @@ void MultiPhaseSorter::sort(const std::string &inputFile, const int numFiles)
     initialize();
 
     splitData(inputFile);
-    // mergeData();
+    mergeData();
 }
 
 void MultiPhaseSorter::initialize()
@@ -18,15 +18,15 @@ void MultiPhaseSorter::initialize()
     createAuxiliaryFiles();
 
     _L = 1;
-    _ip = std::vector<int>(_numFiles - 2, 1); // Идеальное распределение
-    _ms = std::vector<int>(_numFiles - 2, 1); // Количество отрезков для каждого файла
+    _ip = std::vector<int>(_numFiles - 1, 1); // Идеальное распределение
+    _ms = std::vector<int>(_numFiles - 1, 1); // Количество отрезков для каждого файла
     _ip.push_back(0);
     _ms.push_back(0);
 }
 
 void MultiPhaseSorter::createAuxiliaryFiles()
 {
-    for (int i = 0; i < _numFiles - 1; ++i) {
+    for (int i = 0; i < _numFiles; ++i) {
         _tempFiles.push_back("temp" + std::to_string(i) + ".txt");
     }
 }
@@ -39,8 +39,8 @@ void MultiPhaseSorter::splitData(const std::string &inputFile)
         return;
     }
 
-    std::vector<std::ofstream> tempFileStreams(_numFiles - 2);
-    for (int i = 0; i < _numFiles - 2; ++i) {
+    std::vector<std::ofstream> tempFileStreams(_numFiles - 1);
+    for (int i = 0; i < _numFiles - 1; ++i) {
         tempFileStreams[i].open(_tempFiles[i]);
         if (!tempFileStreams[i].is_open()) {
             std::cerr << "Error: Could not open temp file " << _tempFiles[i] << " for writing.\n";
@@ -50,7 +50,7 @@ void MultiPhaseSorter::splitData(const std::string &inputFile)
 
     bool endOfFileReached = false;
 
-    while (!endOfFileReached) {
+    while (true) {
         int i = 0;
 
         int currentNumber;
@@ -70,12 +70,24 @@ void MultiPhaseSorter::splitData(const std::string &inputFile)
                 tempFileStreams[i] << currentNumber << " ";
             }
 
-            if (inFile.eof()) {
-                endOfFileReached = true;
-                break;
+            if (currentNumber == 6) {
+                std::cout << "6";
             }
 
             _ms[i]--;
+            if (endOfFileReached) {
+                // Закрываем все файлы и исходный файл
+                for (int i = 0; i < _numFiles - 2; ++i) {
+                    tempFileStreams[i].close();
+                }
+
+                inFile.close();
+                return;
+            }
+
+            if (inFile.eof()) {
+                endOfFileReached = true;
+            }
 
             if (_ms[i] < _ms[i + 1] && i < _numFiles - 2) {
                 i++;
@@ -93,13 +105,6 @@ void MultiPhaseSorter::splitData(const std::string &inputFile)
             break;
         }
     }
-
-    // Закрываем все файлы и исходный файл
-    for (int i = 0; i < _numFiles - 2; ++i) {
-        tempFileStreams[i].close();
-    }
-
-    inFile.close();
 }
 
 void MultiPhaseSorter::mergeData()
@@ -212,7 +217,7 @@ void MultiPhaseSorter::recalculateLevels()
     _L++; // Увеличиваем уровень
     int ip0 = _ip[0]; // Сохраняем значение ip[0]
 
-    for (int k = 0; k < _numFiles - 2; ++k) {
+    for (int k = 0; k < _numFiles - 1; ++k) {
         _ms[k] = _ip[k + 1] - _ip[k] + ip0; // Пересчитываем ms
         _ip[k] = _ip[k + 1] + ip0; // Пересчитываем ip
     }

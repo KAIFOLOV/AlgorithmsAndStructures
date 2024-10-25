@@ -61,9 +61,9 @@ int createAndSortFile(const std::string &fileName, const int numbersCount, const
     if (maxNumberValue == 0)
         return -2;
 
-    if (!createFileWithRandomNumbers(fileName, numbersCount, maxNumberValue)) {
-        return -3;
-    }
+    // if (!createFileWithRandomNumbers(fileName, numbersCount, maxNumberValue)) {
+    //     return -3;
+    // }
 
     MultiPhaseSorter tmp;
     tmp.sort(fileName);
