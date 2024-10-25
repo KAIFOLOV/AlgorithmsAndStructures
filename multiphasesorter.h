@@ -7,13 +7,25 @@
 class MultiPhaseSorter
 {
 public:
-    static void sort(const std::string &inputFile, const int numFiles = 3);
+    explicit MultiPhaseSorter() = default;
+    void sort(const std::string &inputFile, const int numFiles = 4);
 
 private:
-    static void createAuxiliaryFiles(std::vector<std::string> &tempFiles, int numFiles);
-    static void splitData(const std::string &inputFile, std::vector<std::string> &tempFiles, int n);
+    void initialize();
+    void createAuxiliaryFiles();
+    void recalculateLevels();
 
-    static void cleanupTempFiles(const std::vector<std::string> &tempFiles);
+    void splitData(const std::string &inputFile);
+    void mergeData();
+
+    void cleanupTempFiles(const std::vector<std::string> &tempFiles);
+
+    std::vector<std::string> _tempFiles;
+
+    std::vector<int> _ip {};
+    std::vector<int> _ms {};
+    int _numFiles = 0;
+    int _L = 0;
 };
 
 #endif // MULTIPHASESORTER_H
