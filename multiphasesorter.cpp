@@ -10,7 +10,10 @@ void MultiPhaseSorter::sort(const std::string &inputFile, const int numFiles)
     initialize();
 
     splitData(inputFile);
-    mergeData();
+    merge();
+
+    writeToOutput(inputFile);
+    cleanupTempFiles();
 }
 
 void MultiPhaseSorter::initialize()
@@ -18,8 +21,8 @@ void MultiPhaseSorter::initialize()
     createAuxiliaryFiles();
 
     _L = 1;
-    _ip = std::vector<int>(_numFiles - 1, 1); // Идеальное распределение
-    _ms = std::vector<int>(_numFiles - 1, 1); // Количество отрезков для каждого файла
+    _ip = std::vector<int>(_numFiles - 1, 1);
+    _ms = std::vector<int>(_numFiles - 1, 1);
     _ip.push_back(0);
     _ms.push_back(0);
 }
@@ -48,177 +51,245 @@ void MultiPhaseSorter::splitData(const std::string &inputFile)
         }
     }
 
-    bool endOfFileReached = false;
+    int i = 0;
+    int currentNumber, lastNumber;
+    inFile >> currentNumber;
 
     while (true) {
-        int i = 0;
-
-        int currentNumber;
-        int lastNumber;
-        if (!(inFile >> currentNumber)) {
-            break;
-        }
-
-        while (true) {
-            tempFileStreams[i] << currentNumber << " ";
+        do {
             lastNumber = currentNumber;
 
-            while (inFile >> currentNumber) {
-                if (currentNumber < lastNumber)
-                    break;
-                lastNumber = currentNumber;
-                tempFileStreams[i] << currentNumber << " ";
-            }
+            tempFileStreams[i] << lastNumber << " ";
+        } while (inFile >> currentNumber && lastNumber < currentNumber);
 
-            if (currentNumber == 6) {
-                std::cout << "6";
-            }
+        tempFileStreams[i] << SEGMENT_DELIMITER << " ";
+        _ms[i]--;
 
-            _ms[i]--;
-            if (endOfFileReached) {
-                // Закрываем все файлы и исходный файл
-                for (int i = 0; i < _numFiles - 2; ++i) {
-                    tempFileStreams[i].close();
-                }
-
-                inFile.close();
-                return;
-            }
-
-            if (inFile.eof()) {
-                endOfFileReached = true;
-            }
-
-            if (_ms[i] < _ms[i + 1] && i < _numFiles - 2) {
-                i++;
-            } else {
-                if (_ms[i] == 0) {
-                    recalculateLevels();
-                    i = 0;
-                } else {
-                    i = 0;
-                }
-            }
-        }
-
-        if (_ms[_numFiles - 2] == 0) {
+        if (inFile.eof()) {
             break;
         }
+
+        if (_ms[i] < _ms[i + 1]) {
+            i++;
+        } else if (_ms[i] == 0) {
+            recalculateLevels();
+            i = 0;
+        } else {
+            i = 0;
+        }
     }
+
+    for (auto &fileStream : tempFileStreams) {
+        fileStream.close();
+    }
+    inFile.close();
 }
 
-void MultiPhaseSorter::mergeData()
+void MultiPhaseSorter::rotateFiles(std::vector<std::fstream> &files)
 {
-    // Открываем файл для записи объединенных данных
-    std::ofstream outFileStream(_tempFiles[_numFiles - 1], std::ios::out);
-    if (!outFileStream.is_open()) {
-        std::cerr << "Error: Could not open temp file for writing output.\n";
-        return;
+    files[_numFiles - 2].close();
+    files[_numFiles - 1].close();
+
+    files[_numFiles - 2].open(_tempFiles[_numFiles - 2], std::fstream::out);
+    files[_numFiles - 1].open(_tempFiles[_numFiles - 1], std::fstream::in);
+
+    std::string lastTempFile = _tempFiles.back();
+    int lastIp = _ip.back();
+    int lastMs = _ms.back();
+
+    for (int i = _numFiles - 1; i > 0; i--) {
+        _tempFiles[i] = _tempFiles[i - 1];
+        _ip[i] = _ip[i - 1];
+        _ms[i] = _ms[i - 1];
     }
 
-    std::vector<std::ifstream> inFileStreams(_numFiles - 1);
-    // Открываем временные файлы для чтения
+    _tempFiles[0] = lastTempFile;
+    _ip[0] = lastIp;
+    _ms[0] = lastMs;
+}
+
+void MultiPhaseSorter::merge()
+{
+    std::vector<std::fstream *> tempFiles(_numFiles);
+
     for (int i = 0; i < _numFiles - 1; ++i) {
-        inFileStreams[i].open(_tempFiles[i]);
-        if (!inFileStreams[i].is_open()) {
+        tempFiles[i] = new std::fstream(_tempFiles[i], std::ios::in);
+        if (!tempFiles[i]->is_open()) {
             std::cerr << "Error: Could not open temp file " << _tempFiles[i] << " for reading.\n";
             return;
         }
     }
 
+    tempFiles[_numFiles - 1] = new std::fstream(_tempFiles[_numFiles - 1], std::fstream::out);
+
     while (_L > 0) {
-        // 7.1 Проверяем, все ли ms > 0
-        if (std::all_of(_ms.begin(), _ms.end(), [](int x) {
-                return x > 0;
-            })) {
-            for (int &m : _ms) {
-                m--; // Уменьшаем фиктивные отрезки
+        int min = *std::min_element(_ms.begin(), _ms.end());
+
+        if (min > 0) {
+            for (int j = 0; j < _numFiles - 1; j++) {
+                _ip[j]--;
+                _ms[j]--;
             }
-            _ms[_numFiles - 2]++; // Добавляем фиктивный отрезок в выходной файл
+            _ms.back()++;
         }
 
-        // 7.2 Сливаем текущие отрезки, если ms[i] == 0
-        for (int i = 0; i < _numFiles - 1; ++i) {
-            if (_ms[i] == 0) {
-                int number;
-                int lastNumber = INT_MIN;
+        mergeFile(tempFiles);
+        --_L;
 
-                // Слияние текущего отрезка
-                while (inFileStreams[i] >> number) {
-                    if (number < lastNumber) {
-                        // Обнаружен конец отрезка
-                        break;
-                    }
-                    outFileStream << number << " ";
-                    lastNumber = number;
-                }
+        tempFiles[_numFiles - 2]->close();
+        tempFiles[_numFiles - 1]->close();
 
-                // Уменьшаем количество отрезков для текущего файла
-                _ms[i]--;
-            }
+        tempFiles[_numFiles - 2]->open(_tempFiles[_numFiles - 2], std::fstream::out);
+        tempFiles[_numFiles - 1]->open(_tempFiles[_numFiles - 1], std::fstream::in);
+
+        std::string name_tmp = _tempFiles[_numFiles - 1];
+        std::fstream *file_tmp = tempFiles[_numFiles - 1];
+
+        int ip_tmp = _ip[_numFiles - 1];
+        int ms_tmp = _ms[_numFiles - 1];
+
+        for (int i = _numFiles - 1; i > 0; i--) {
+            _tempFiles[i] = _tempFiles[i - 1];
+            tempFiles[i] = tempFiles[i - 1];
+
+            _ip[i] = _ip[i - 1];
+            _ms[i] = _ms[i - 1];
         }
 
-        // 7.3 Проверяем, завершены ли все отрезки
-        if (std::all_of(_ms.begin(), _ms.end(), [](int x) {
-                return x <= 0;
-            })) {
-            _L--; // Уменьшаем уровень
+        _tempFiles[0] = name_tmp;
+        tempFiles[0] = file_tmp;
 
-            // Переоткрываем файлы для чтения на новом уровне
-            for (int i = 0; i < _numFiles - 1; ++i) {
-                inFileStreams[i].close();
-                inFileStreams[i].clear(); // Сброс флагов состояния потока
-                inFileStreams[i].open(_tempFiles[i]);
-                if (!inFileStreams[i].is_open()) {
-                    std::cerr << "Error: Could not reopen temp file " << _tempFiles[i]
-                              << " for reading.\n";
-                    return;
-                }
-            }
-
-            outFileStream.close();
-            outFileStream.open(_tempFiles[_numFiles - 1], std::ios::out);
-            if (!outFileStream.is_open()) {
-                std::cerr << "Error: Could not reopen temp file for writing output.\n";
-                return;
-            }
-        }
+        _ip[0] = ip_tmp;
+        _ms[0] = ms_tmp;
     }
 
-    // Завершающая часть: копируем результат в final_result.txt, если достигнут уровень 0
-    if (_L == 0) {
-        std::ifstream finalFile(_tempFiles[_numFiles - 1]);
-        if (finalFile.is_open()) {
-            std::ofstream output("final_result.txt");
-            output << finalFile.rdbuf();
-            finalFile.close();
-            output.close();
-        }
+    for (auto file : tempFiles) {
+        file->close();
     }
-
-    // Закрываем все оставшиеся потоки
-    for (auto &stream : inFileStreams) {
-        if (stream.is_open())
-            stream.close();
-    }
-    if (outFileStream.is_open())
-        outFileStream.close();
 }
 
-void MultiPhaseSorter::cleanupTempFiles(const std::vector<std::string> &tempFiles)
+void MultiPhaseSorter::mergeFile(std::vector<std::fstream *> &files)
 {
-    for (const auto &fileName : tempFiles) {
+    std::vector<int> segment(_numFiles - 1, SEGMENT_DELIMITER);
+    int eos;
+
+    while (_ip[_numFiles - 2] > 0) {
+        eos = 0;
+
+        bool hasRealData = false;
+        // КОСТЫЛЬ: ЕСЛИ ВО ВСЕХ ФАЙЛАХ ЕСТЬ МНИМЫЙ ОТРЕЗОК, ТО В СЛИВАЕМЫЙ ФАЙЛ ТОЖЕ НАДО ПРИБАВИТЬ
+        // МНИМЫЙ
+        std::vector<bool> costul(_numFiles - 1, false);
+
+        for (int i = 0; i < _numFiles - 1; i++) {
+            if (_ms[i] > 0) {
+                eos++;
+                costul[i] = true;
+
+                _ip[i]--;
+                _ms[i]--;
+            } else {
+                if (_ip[i] <= 0)
+                    continue;
+
+                // КОСТЫЛЬ: В СИТУАЦИИ КОГДА РАБОТАЕМ С МНИМЫМИ ФРАГМЕНТАМИ, РАЗДЕЛИТЕЛЬ ПИШЕТСЯ В
+                // ФАЙЛ, ПРИ ЧТЕНИИ ЕГО ОТБРАСЫВАЕМ
+                int tmp;
+                do {
+                    *files[i] >> tmp;
+
+                    if (tmp == SEGMENT_DELIMITER) {
+                        _ip[i]--;
+                    }
+
+                } while (tmp == SEGMENT_DELIMITER && _ip[i] > 0);
+
+                if (tmp != SEGMENT_DELIMITER) {
+                    segment[i] = tmp;
+                }
+            }
+
+            if (std::all_of(costul.begin(), costul.end(), [](bool value) {
+                    return value;
+                })) {
+                _ms[_numFiles - 1]++;
+                _ip[_numFiles - 1]++;
+                costul = std::vector<bool>(_numFiles - 1, false);
+            }
+        }
+
+        while (eos < _numFiles - 1) {
+            int minIndex = min(segment);
+
+            *files[_numFiles - 1] << segment[minIndex] << " ";
+
+            *files[minIndex] >> segment[minIndex];
+
+            if (segment[minIndex] == SEGMENT_DELIMITER) {
+                eos++;
+
+                _ip[minIndex]--;
+            }
+        }
+
+        _ip[_numFiles - 1]++;
+        *files[_numFiles - 1] << SEGMENT_DELIMITER << " ";
+    }
+}
+
+int MultiPhaseSorter::min(std::vector<int> &segment)
+{
+    int minIndex = 0;
+    int minValue = std::numeric_limits<int>::max();
+
+    for (int i = 0; i < _numFiles - 1; i++) {
+        if (minValue > segment[i] && segment[i] != SEGMENT_DELIMITER) {
+            minValue = segment[i];
+            minIndex = i;
+        }
+    }
+
+    return minIndex;
+}
+
+void MultiPhaseSorter::cleanupTempFiles()
+{
+    for (const auto &fileName : _tempFiles) {
         std::remove(fileName.c_str());
     }
 }
 
 void MultiPhaseSorter::recalculateLevels()
 {
-    _L++; // Увеличиваем уровень
-    int ip0 = _ip[0]; // Сохраняем значение ip[0]
+    _L++;
+    int ip0 = _ip[0];
 
     for (int k = 0; k < _numFiles - 1; ++k) {
-        _ms[k] = _ip[k + 1] - _ip[k] + ip0; // Пересчитываем ms
-        _ip[k] = _ip[k + 1] + ip0; // Пересчитываем ip
+        _ms[k] = _ip[k + 1] - _ip[k] + ip0;
+        _ip[k] = _ip[k + 1] + ip0;
     }
+}
+
+void MultiPhaseSorter::writeToOutput(const std::string &inputFile)
+{
+    std::ifstream sortedFile(_tempFiles.front());
+    std::ofstream outputFile(inputFile, std::ios::trunc);
+
+    if (!sortedFile.is_open() || !outputFile.is_open()) {
+        std::cerr << "Error: Could not open files for final writing.\n";
+        return;
+    }
+
+    int a;
+
+    sortedFile >> a;
+
+    while (a != SEGMENT_DELIMITER) {
+        outputFile << a << " ";
+
+        sortedFile >> a;
+    }
+
+    sortedFile.close();
+    outputFile.close();
 }

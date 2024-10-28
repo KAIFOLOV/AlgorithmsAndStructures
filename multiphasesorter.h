@@ -2,7 +2,10 @@
 #define MULTIPHASESORTER_H
 
 #include <iostream>
+#include <limits>
 #include <vector>
+
+constexpr int SEGMENT_DELIMITER = std::numeric_limits<int>::min();
 
 class MultiPhaseSorter
 {
@@ -10,15 +13,22 @@ public:
     explicit MultiPhaseSorter() = default;
     void sort(const std::string &inputFile, const int numFiles = 4);
 
+    void rotateFiles(std::vector<std::fstream> &files);
+
+    void writeToOutput(const std::string &inputFile);
+
+    int min(std::vector<int> &segment);
+
 private:
     void initialize();
     void createAuxiliaryFiles();
     void recalculateLevels();
 
     void splitData(const std::string &inputFile);
-    void mergeData();
+    void merge();
+    void mergeFile(std::vector<std::fstream *> &files);
 
-    void cleanupTempFiles(const std::vector<std::string> &tempFiles);
+    void cleanupTempFiles();
 
     std::vector<std::string> _tempFiles;
 

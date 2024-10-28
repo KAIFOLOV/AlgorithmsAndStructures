@@ -61,9 +61,9 @@ int createAndSortFile(const std::string &fileName, const int numbersCount, const
     if (maxNumberValue == 0)
         return -2;
 
-    // if (!createFileWithRandomNumbers(fileName, numbersCount, maxNumberValue)) {
-    //     return -3;
-    // }
+    if (!createFileWithRandomNumbers(fileName, numbersCount, maxNumberValue)) {
+        return -3;
+    }
 
     MultiPhaseSorter tmp;
     tmp.sort(fileName);
@@ -78,12 +78,10 @@ int createAndSortFile(const std::string &fileName, const int numbersCount, const
 int main()
 {
     const std::string fileName = "kek.txt";
-    const int numbersCount = 10;
-    const int maxNumberValue = 100;
+    const int numbersCount = 10000;
+    const int maxNumberValue = 10000;
 
-    createFileWithRandomNumbers("lol.txt", numbersCount, maxNumberValue);
-
-    for (int i = 1; i < 2; i++) {
+    for (int i = 1; i < 12; i++) {
         switch (createAndSortFile(fileName, numbersCount, maxNumberValue)) {
         case 1:
             std::cout << "Test " << i << " passed." << std::endl;
