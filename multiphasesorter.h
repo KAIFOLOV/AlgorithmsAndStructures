@@ -24,7 +24,7 @@ private:
     void createAuxiliaryFiles();
     void recalculateLevels();
 
-    void splitData(const std::string &inputFile);
+    bool splitData(const std::string &inputFile);
     void merge();
     void mergeFile(std::vector<std::fstream *> &files);
 

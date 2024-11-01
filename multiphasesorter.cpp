@@ -9,7 +9,8 @@ void MultiPhaseSorter::sort(const std::string &inputFile, const int numFiles)
 
     initialize();
 
-    splitData(inputFile);
+    if (!splitData(inputFile))
+        return;
     merge();
 
     writeToOutput(inputFile);
@@ -34,20 +35,32 @@ void MultiPhaseSorter::createAuxiliaryFiles()
     }
 }
 
-void MultiPhaseSorter::splitData(const std::string &inputFile)
+bool MultiPhaseSorter::splitData(const std::string &inputFile)
 {
     std::ifstream inFile(inputFile);
     if (!inFile.is_open()) {
         std::cerr << "Error: Could not open input file.\n";
-        return;
+        return false;
     }
+
+    inFile.seekg(0, std::ios::end);
+    if (inFile.tellg() == 0) {
+        std::cerr << "Error: Input file is empty.\n";
+        inFile.close();
+        return false;
+    }
+    inFile.seekg(0, std::ios::beg);
 
     std::vector<std::ofstream> tempFileStreams(_numFiles - 1);
     for (int i = 0; i < _numFiles - 1; ++i) {
         tempFileStreams[i].open(_tempFiles[i]);
+
         if (!tempFileStreams[i].is_open()) {
-            std::cerr << "Error: Could not open temp file " << _tempFiles[i] << " for writing.\n";
-            return;
+            for (int j = 0; j < i; ++j) {
+                tempFileStreams[j].close();
+            }
+            inFile.close();
+            return false;
         }
     }
 
@@ -82,7 +95,9 @@ void MultiPhaseSorter::splitData(const std::string &inputFile)
     for (auto &fileStream : tempFileStreams) {
         fileStream.close();
     }
+
     inFile.close();
+    return true;
 }
 
 void MultiPhaseSorter::rotateFiles(std::vector<std::fstream> &files)
@@ -116,6 +131,9 @@ void MultiPhaseSorter::merge()
         tempFiles[i] = new std::fstream(_tempFiles[i], std::ios::in);
         if (!tempFiles[i]->is_open()) {
             std::cerr << "Error: Could not open temp file " << _tempFiles[i] << " for reading.\n";
+            for (int j = 0; j <= i; ++j) {
+                delete tempFiles[j];
+            }
             return;
         }
     }
@@ -165,6 +183,7 @@ void MultiPhaseSorter::merge()
 
     for (auto file : tempFiles) {
         file->close();
+        delete file;
     }
 }
 
@@ -189,6 +208,7 @@ void MultiPhaseSorter::mergeFile(std::vector<std::fstream *> &files)
                 _ip[i]--;
                 _ms[i]--;
             } else {
+                hasRealData = true;
                 if (_ip[i] <= 0)
                     continue;
 
@@ -257,6 +277,7 @@ void MultiPhaseSorter::cleanupTempFiles()
     for (const auto &fileName : _tempFiles) {
         std::remove(fileName.c_str());
     }
+    _tempFiles.clear();
 }
 
 void MultiPhaseSorter::recalculateLevels()

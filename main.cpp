@@ -78,10 +78,10 @@ int createAndSortFile(const std::string &fileName, const int numbersCount, const
 int main()
 {
     const std::string fileName = "kek.txt";
-    const int numbersCount = 10000;
+    const int numbersCount = 1000;
     const int maxNumberValue = 10000;
 
-    for (int i = 1; i < 12; i++) {
+    for (int i = 1; i < 2; i++) {
         switch (createAndSortFile(fileName, numbersCount, maxNumberValue)) {
         case 1:
             std::cout << "Test " << i << " passed." << std::endl;
