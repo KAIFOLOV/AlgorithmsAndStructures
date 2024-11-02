@@ -196,14 +196,10 @@ void MultiPhaseSorter::mergeFile(std::vector<std::fstream *> &files)
         eos = 0;
 
         bool hasRealData = false;
-        // КОСТЫЛЬ: ЕСЛИ ВО ВСЕХ ФАЙЛАХ ЕСТЬ МНИМЫЙ ОТРЕЗОК, ТО В СЛИВАЕМЫЙ ФАЙЛ ТОЖЕ НАДО ПРИБАВИТЬ
-        // МНИМЫЙ
-        std::vector<bool> costul(_numFiles - 1, false);
 
         for (int i = 0; i < _numFiles - 1; i++) {
             if (_ms[i] > 0) {
                 eos++;
-                costul[i] = true;
 
                 _ip[i]--;
                 _ms[i]--;
@@ -211,30 +207,7 @@ void MultiPhaseSorter::mergeFile(std::vector<std::fstream *> &files)
                 hasRealData = true;
                 if (_ip[i] <= 0)
                     continue;
-
-                // КОСТЫЛЬ: В СИТУАЦИИ КОГДА РАБОТАЕМ С МНИМЫМИ ФРАГМЕНТАМИ, РАЗДЕЛИТЕЛЬ ПИШЕТСЯ В
-                // ФАЙЛ, ПРИ ЧТЕНИИ ЕГО ОТБРАСЫВАЕМ
-                int tmp;
-                do {
-                    *files[i] >> tmp;
-
-                    if (tmp == SEGMENT_DELIMITER) {
-                        _ip[i]--;
-                    }
-
-                } while (tmp == SEGMENT_DELIMITER && _ip[i] > 0);
-
-                if (tmp != SEGMENT_DELIMITER) {
-                    segment[i] = tmp;
-                }
-            }
-
-            if (std::all_of(costul.begin(), costul.end(), [](bool value) {
-                    return value;
-                })) {
-                _ms[_numFiles - 1]++;
-                _ip[_numFiles - 1]++;
-                costul = std::vector<bool>(_numFiles - 1, false);
+                *files[i] >> segment[i];
             }
         }
 
@@ -252,8 +225,13 @@ void MultiPhaseSorter::mergeFile(std::vector<std::fstream *> &files)
             }
         }
 
-        _ip[_numFiles - 1]++;
-        *files[_numFiles - 1] << SEGMENT_DELIMITER << " ";
+        if (!hasRealData) {
+            _ms[_numFiles - 1]++;
+            _ip[_numFiles - 1]++;
+        } else {
+            _ip[_numFiles - 1]++;
+            *files[_numFiles - 1] << SEGMENT_DELIMITER << " ";
+        }
     }
 }
 

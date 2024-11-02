@@ -81,7 +81,7 @@ int main()
     const int numbersCount = 1000;
     const int maxNumberValue = 10000;
 
-    for (int i = 1; i < 2; i++) {
+    for (int i = 1; i < 12; i++) {
         switch (createAndSortFile(fileName, numbersCount, maxNumberValue)) {
         case 1:
             std::cout << "Test " << i << " passed." << std::endl;
