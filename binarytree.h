@@ -47,7 +47,7 @@ private:
     int calculateHeight(TreeNode *node) const;
     int countNodes(TreeNode *node) const;
     bool checkBalance(TreeNode *node) const;
-    void inorderTraversal(TreeNode *node, std::vector<int> &keys) const;
+    void inOrderTraversal(TreeNode *node, std::vector<int> &keys) const;
     void printHorizontal(TreeNode *node, int space) const;
 };
 #endif // BINARYTREE_H

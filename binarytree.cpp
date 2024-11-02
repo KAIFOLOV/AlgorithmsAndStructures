@@ -1,4 +1,5 @@
 #include "binarytree.h"
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <queue>
@@ -162,7 +163,8 @@ int BinaryTree::getLevel(double value) const
 std::vector<int> BinaryTree::getSortedKeys() const
 {
     std::vector<int> keys;
-    inorderTraversal(_root, keys);
+    inOrderTraversal(_root, keys);
+    std::sort(keys.begin(), keys.end());
     return keys;
 }
 
@@ -275,15 +277,14 @@ bool BinaryTree::checkBalance(TreeNode *node) const
            && checkBalance(node->getChild(1));
 }
 
-void BinaryTree::inorderTraversal(TreeNode *node, std::vector<int> &keys) const
+void BinaryTree::inOrderTraversal(TreeNode *node, std::vector<int> &keys) const
 {
-    if (!node)
+    if (node == nullptr) {
         return;
-    if (node->getChild(0))
-        inorderTraversal(node->getChild(0), keys);
+    }
+    inOrderTraversal(node->getChild(0), keys);
     keys.push_back(node->getValue());
-    if (node->getChild(1))
-        inorderTraversal(node->getChild(1), keys);
+    inOrderTraversal(node->getChild(1), keys);
 }
 
 void BinaryTree::printHorizontal(TreeNode *node, int space) const
