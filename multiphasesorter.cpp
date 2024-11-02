@@ -75,7 +75,7 @@ bool MultiPhaseSorter::splitData(const std::string &inputFile)
             tempFileStreams[i] << lastNumber << " ";
         } while (inFile >> currentNumber && lastNumber < currentNumber);
 
-        tempFileStreams[i] << SEGMENT_DELIMITER << " ";
+        tempFileStreams[i] << _SEGMENT_DELIMITER << " ";
         _ms[i]--;
 
         if (inFile.eof()) {
@@ -189,7 +189,7 @@ void MultiPhaseSorter::merge()
 
 void MultiPhaseSorter::mergeFile(std::vector<std::fstream *> &files)
 {
-    std::vector<int> segment(_numFiles - 1, SEGMENT_DELIMITER);
+    std::vector<int> segment(_numFiles - 1, _SEGMENT_DELIMITER);
     int eos;
 
     while (_ip[_numFiles - 2] > 0) {
@@ -218,7 +218,7 @@ void MultiPhaseSorter::mergeFile(std::vector<std::fstream *> &files)
 
             *files[minIndex] >> segment[minIndex];
 
-            if (segment[minIndex] == SEGMENT_DELIMITER) {
+            if (segment[minIndex] == _SEGMENT_DELIMITER) {
                 eos++;
 
                 _ip[minIndex]--;
@@ -230,7 +230,7 @@ void MultiPhaseSorter::mergeFile(std::vector<std::fstream *> &files)
             _ip[_numFiles - 1]++;
         } else {
             _ip[_numFiles - 1]++;
-            *files[_numFiles - 1] << SEGMENT_DELIMITER << " ";
+            *files[_numFiles - 1] << _SEGMENT_DELIMITER << " ";
         }
     }
 }
@@ -241,7 +241,7 @@ int MultiPhaseSorter::min(std::vector<int> &segment)
     int minValue = std::numeric_limits<int>::max();
 
     for (int i = 0; i < _numFiles - 1; i++) {
-        if (minValue > segment[i] && segment[i] != SEGMENT_DELIMITER) {
+        if (minValue > segment[i] && segment[i] != _SEGMENT_DELIMITER) {
             minValue = segment[i];
             minIndex = i;
         }
@@ -283,7 +283,7 @@ void MultiPhaseSorter::writeToOutput(const std::string &inputFile)
 
     sortedFile >> a;
 
-    while (a != SEGMENT_DELIMITER) {
+    while (a != _SEGMENT_DELIMITER) {
         outputFile << a << " ";
 
         sortedFile >> a;

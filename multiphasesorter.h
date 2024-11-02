@@ -5,8 +5,6 @@
 #include <limits>
 #include <vector>
 
-constexpr int SEGMENT_DELIMITER = std::numeric_limits<int>::min();
-
 class MultiPhaseSorter
 {
 public:
@@ -36,6 +34,8 @@ private:
     std::vector<int> _ms {};
     int _numFiles = 0;
     int _L = 0;
+
+    static constexpr int _SEGMENT_DELIMITER = std::numeric_limits<int>::min();
 };
 
 #endif // MULTIPHASESORTER_H
