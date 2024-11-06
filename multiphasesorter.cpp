@@ -75,7 +75,7 @@ bool MultiPhaseSorter::splitData(const std::string &inputFile)
             tempFileStreams[i] << lastNumber << " ";
         } while (inFile >> currentNumber && lastNumber < currentNumber);
 
-        tempFileStreams[i] << SEGMENT_DELIMITER << " ";
+        tempFileStreams[i] << _SEGMENT_DELIMITER << " ";
         _ms[i]--;
 
         if (inFile.eof()) {
@@ -189,21 +189,17 @@ void MultiPhaseSorter::merge()
 
 void MultiPhaseSorter::mergeFile(std::vector<std::fstream *> &files)
 {
-    std::vector<int> segment(_numFiles - 1, SEGMENT_DELIMITER);
+    std::vector<int> segment(_numFiles - 1, _SEGMENT_DELIMITER);
     int eos;
 
     while (_ip[_numFiles - 2] > 0) {
         eos = 0;
 
         bool hasRealData = false;
-        // КОСТЫЛЬ: ЕСЛИ ВО ВСЕХ ФАЙЛАХ ЕСТЬ МНИМЫЙ ОТРЕЗОК, ТО В СЛИВАЕМЫЙ ФАЙЛ ТОЖЕ НАДО ПРИБАВИТЬ
-        // МНИМЫЙ
-        std::vector<bool> costul(_numFiles - 1, false);
 
         for (int i = 0; i < _numFiles - 1; i++) {
             if (_ms[i] > 0) {
                 eos++;
-                costul[i] = true;
 
                 _ip[i]--;
                 _ms[i]--;
@@ -211,30 +207,7 @@ void MultiPhaseSorter::mergeFile(std::vector<std::fstream *> &files)
                 hasRealData = true;
                 if (_ip[i] <= 0)
                     continue;
-
-                // КОСТЫЛЬ: В СИТУАЦИИ КОГДА РАБОТАЕМ С МНИМЫМИ ФРАГМЕНТАМИ, РАЗДЕЛИТЕЛЬ ПИШЕТСЯ В
-                // ФАЙЛ, ПРИ ЧТЕНИИ ЕГО ОТБРАСЫВАЕМ
-                int tmp;
-                do {
-                    *files[i] >> tmp;
-
-                    if (tmp == SEGMENT_DELIMITER) {
-                        _ip[i]--;
-                    }
-
-                } while (tmp == SEGMENT_DELIMITER && _ip[i] > 0);
-
-                if (tmp != SEGMENT_DELIMITER) {
-                    segment[i] = tmp;
-                }
-            }
-
-            if (std::all_of(costul.begin(), costul.end(), [](bool value) {
-                    return value;
-                })) {
-                _ms[_numFiles - 1]++;
-                _ip[_numFiles - 1]++;
-                costul = std::vector<bool>(_numFiles - 1, false);
+                *files[i] >> segment[i];
             }
         }
 
@@ -245,15 +218,20 @@ void MultiPhaseSorter::mergeFile(std::vector<std::fstream *> &files)
 
             *files[minIndex] >> segment[minIndex];
 
-            if (segment[minIndex] == SEGMENT_DELIMITER) {
+            if (segment[minIndex] == _SEGMENT_DELIMITER) {
                 eos++;
 
                 _ip[minIndex]--;
             }
         }
 
-        _ip[_numFiles - 1]++;
-        *files[_numFiles - 1] << SEGMENT_DELIMITER << " ";
+        if (!hasRealData) {
+            _ms[_numFiles - 1]++;
+            _ip[_numFiles - 1]++;
+        } else {
+            _ip[_numFiles - 1]++;
+            *files[_numFiles - 1] << _SEGMENT_DELIMITER << " ";
+        }
     }
 }
 
@@ -263,7 +241,7 @@ int MultiPhaseSorter::min(std::vector<int> &segment)
     int minValue = std::numeric_limits<int>::max();
 
     for (int i = 0; i < _numFiles - 1; i++) {
-        if (minValue > segment[i] && segment[i] != SEGMENT_DELIMITER) {
+        if (minValue > segment[i] && segment[i] != _SEGMENT_DELIMITER) {
             minValue = segment[i];
             minIndex = i;
         }
@@ -305,7 +283,7 @@ void MultiPhaseSorter::writeToOutput(const std::string &inputFile)
 
     sortedFile >> a;
 
-    while (a != SEGMENT_DELIMITER) {
+    while (a != _SEGMENT_DELIMITER) {
         outputFile << a << " ";
 
         sortedFile >> a;
