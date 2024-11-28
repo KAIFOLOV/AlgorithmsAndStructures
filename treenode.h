@@ -31,7 +31,19 @@ public:
      * \brief Устанавливает значение для узла
      * \param новое значение.
      */
-    void setValue(double newValue);
+    void setValue(const double &newValue);
+
+    /*!
+     * \brief Устанавливает левый дочерний узел
+     * \param новый узел.
+     */
+    void setLeftChild(TreeNode *left);
+
+    /*!
+     * \brief Устанавливает правый дочерний узел
+     * \param новый узел.
+     */
+    void setRightChild(TreeNode *right);
 
     // Getters
 
@@ -48,17 +60,16 @@ public:
     TreeNode *getParent() const;
 
     /*!
-     * \brief Возвращает дочерний узел по индексу.
-     * \param index Индекс дочернего узла.
-     * \return Дочерний узел.
+     * \brief Возвращает левый дочерний узел.
+     * \return дочерний узел.
      */
-    TreeNode *getChild(int index);
+    TreeNode *getLeftChild() const;
 
     /*!
-     * \brief Возвращает список дочерних узлов.
-     * \return Список дочерних узлов.
+     * \brief Возвращает правый дочерний узел.
+     * \return дочерний узел.
      */
-    std::vector<TreeNode *> getChildren() const;
+    TreeNode *getRightChild() const;
 
     // Child
 
@@ -97,10 +108,12 @@ public:
 private:
     /// Значение
     double _value = 0;
-    /// Список дочерних узлов
-    std::vector<TreeNode *> _children;
     /// Родительский узел.
     TreeNode *_parent = nullptr;
+    /// Левый дочерний узел
+    TreeNode *_left = nullptr;
+    /// Правый дочерний узел
+    TreeNode *_right = nullptr;
 };
 
 #endif // TREENODE_H

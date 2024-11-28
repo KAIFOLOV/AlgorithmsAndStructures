@@ -1,15 +1,22 @@
 #include "binarytree.h"
-#include <algorithm>
-#include <cstdlib>
+
+#include "treenode.h"
+
 #include <iostream>
 #include <queue>
+#include <algorithm>
+#include <stdexcept>
 
-BinaryTree::BinaryTree(TreeNode *root) : _root(root)
+// Реализация BinaryTree
+BinaryTree::BinaryTree() : _root(nullptr)
 {}
 
-BinaryTree::BinaryTree(const BinaryTree &other)
+BinaryTree::BinaryTree(const BinaryTree &other) : _root(copySubtree(other._root))
+{}
+
+BinaryTree::~BinaryTree()
 {
-    _root = copySubtree(other._root);
+    clear();
 }
 
 TreeNode *BinaryTree::getRoot() const
@@ -17,49 +24,29 @@ TreeNode *BinaryTree::getRoot() const
     return _root;
 }
 
-void BinaryTree::setRoot(TreeNode *newRoot)
-{
-    _root = newRoot;
-}
-
-BinaryTree::~BinaryTree()
-{
-    clear();
-}
-
 void BinaryTree::clear()
 {
     deleteSubtree(_root);
     _root = nullptr;
 }
-
 bool BinaryTree::isEmpty() const
 {
     return _root == nullptr;
 }
 
+TreeNode *BinaryTree::findNode(const double &value) const
+{
+    return findNodeRecursive(_root, value);
+}
+
 bool BinaryTree::addNode(const double &value)
 {
-    TreeNode *newNode = new TreeNode();
-    newNode->setValue(value);
-
-    if (isEmpty()) {
-        _root = newNode;
+    if (!_root) {
+        _root = new TreeNode();
+        _root->setValue(value);
         return true;
     }
-
-    TreeNode *current = _root;
-    while (true) {
-        int direction = rand() % 2;
-        TreeNode *child = current->getChild(direction);
-
-        if (!child) {
-            current->addChild(newNode);
-            newNode->setParent(current);
-            return true;
-        }
-        current = child;
-    }
+    return addNodeRecursive(_root, value);
 }
 
 bool BinaryTree::deleteNode(const double &value)
@@ -68,73 +55,55 @@ bool BinaryTree::deleteNode(const double &value)
     if (!node)
         return false;
 
-    if (node->getParent()) {
-        node->getParent()->removeChild(node);
+    if (!node->getLeftChild() && !node->getRightChild()) {
+        if (node == _root)
+            _root = nullptr;
+
+        else if (node->getParent()->getLeftChild() == node)
+            node->getParent()->setLeftChild(nullptr);
+        else
+            node->getParent()->setRightChild(nullptr);
+
+    } else if (node->getLeftChild() && node->getRightChild()) {
+        TreeNode *successor = findMin(node->getRightChild());
+        node->setValue(successor->getValue());
+        return deleteNode(successor->getValue());
+
     } else {
-        _root = nullptr;
+        TreeNode *child = node->getLeftChild() ? node->getLeftChild() : node->getRightChild();
+        if (node == _root)
+            _root = child;
+        else if (node->getParent()->getLeftChild() == node)
+            node->getParent()->setLeftChild(child);
+        else
+            node->getParent()->setRightChild(child);
+        child->setParent(node->getParent());
     }
-
-    deleteSubtree(node);
+    delete node;
     return true;
-}
-
-TreeNode *BinaryTree::findNode(const double &value) const
-{
-    std::queue<TreeNode *> nodes;
-    nodes.push(_root);
-
-    while (!nodes.empty()) {
-        TreeNode *node = nodes.front();
-        nodes.pop();
-
-        if (node->getValue() == value)
-            return node;
-
-        for (TreeNode *child : node->getChildren()) nodes.push(child);
-    }
-    return nullptr;
 }
 
 int BinaryTree::getHeight() const
 {
     return calculateHeight(_root);
 }
-
 int BinaryTree::getNodeCount() const
 {
     return countNodes(_root);
 }
 
-double BinaryTree::getMinKey() const
+int BinaryTree::getMinKey() const
 {
-    double minKey = _root ? _root->getValue() : 0;
-    std::queue<TreeNode *> nodes;
-    nodes.push(_root);
-
-    while (!nodes.empty()) {
-        TreeNode *node = nodes.front();
-        nodes.pop();
-        minKey = std::min(minKey, node->getValue());
-
-        for (TreeNode *child : node->getChildren()) nodes.push(child);
-    }
-    return minKey;
+    if (!_root)
+        throw std::runtime_error("Tree is empty");
+    return findMin(_root)->getValue();
 }
 
-double BinaryTree::getMaxKey() const
+int BinaryTree::getMaxKey() const
 {
-    double maxKey = _root ? _root->getValue() : 0;
-    std::queue<TreeNode *> nodes;
-    nodes.push(_root);
-
-    while (!nodes.empty()) {
-        TreeNode *node = nodes.front();
-        nodes.pop();
-        maxKey = std::max(maxKey, node->getValue());
-
-        for (TreeNode *child : node->getChildren()) nodes.push(child);
-    }
-    return maxKey;
+    if (!_root)
+        throw std::runtime_error("Tree is empty");
+    return findMax(_root)->getValue();
 }
 
 bool BinaryTree::isBalanced() const
@@ -142,29 +111,15 @@ bool BinaryTree::isBalanced() const
     return checkBalance(_root);
 }
 
-int BinaryTree::getLevel(double value) const
+int BinaryTree::getLevel(int value) const
 {
-    std::queue<std::pair<TreeNode *, int>> nodes;
-    nodes.push({ _root, 0 });
-
-    while (!nodes.empty()) {
-        TreeNode *node = nodes.front().first;
-        int level = nodes.front().second;
-        nodes.pop();
-
-        if (node->getValue() == value)
-            return level;
-
-        for (TreeNode *child : node->getChildren()) nodes.push({ child, level + 1 });
-    }
-    return -1;
+    return findLevel(_root, value, 0);
 }
 
 std::vector<int> BinaryTree::getSortedKeys() const
 {
     std::vector<int> keys;
     inOrderTraversal(_root, keys);
-    std::sort(keys.begin(), keys.end());
     return keys;
 }
 
@@ -175,133 +130,167 @@ void BinaryTree::printTreeHorizontally() const
 
 void BinaryTree::printTreeByLevels() const
 {
-    if (isEmpty())
+    if (!_root)
         return;
-
-    std::queue<TreeNode *> nodes;
-    nodes.push(_root);
-
-    while (!nodes.empty()) {
-        int levelSize = nodes.size();
-
-        for (int i = 0; i < levelSize; ++i) {
-            TreeNode *node = nodes.front();
-            nodes.pop();
-            std::cout << node->getValue() << " ";
-
-            for (TreeNode *child : node->getChildren()) nodes.push(child);
-        }
-        std::cout << std::endl;
-    }
-}
-
-void BinaryTree::printLeaves() const
-{
-    if (isEmpty())
-        return;
-
-    std::queue<TreeNode *> nodes;
-    nodes.push(_root);
-
-    while (!nodes.empty()) {
-        TreeNode *node = nodes.front();
-        nodes.pop();
-
-        if (node->childCount() == 0)
-            std::cout << node->getValue() << " ";
-
-        for (TreeNode *child : node->getChildren()) nodes.push(child);
+    std::queue<TreeNode *> q;
+    q.push(_root);
+    while (!q.empty()) {
+        TreeNode *node = q.front();
+        q.pop();
+        std::cout << node->getValue() << " ";
+        if (node->getLeftChild())
+            q.push(node->getLeftChild());
+        if (node->getRightChild())
+            q.push(node->getRightChild());
     }
     std::cout << std::endl;
 }
 
-BinaryTree &BinaryTree::operator=(const BinaryTree &other)
+void BinaryTree::printLeaves() const
 {
-    if (this != &other) {
-        clear();
-        _root = copySubtree(other._root);
+    printLeavesRecursive(_root);
+}
+
+TreeNode *BinaryTree::findNodeRecursive(TreeNode *node, int value) const
+{
+    if (!node || node->getValue() == value)
+        return node;
+    if (value < node->getValue())
+        return findNodeRecursive(node->getLeftChild(), value);
+    return findNodeRecursive(node->getRightChild(), value);
+}
+
+bool BinaryTree::addNodeRecursive(TreeNode *node, const double &value)
+{
+    if (value < node->getValue()) {
+        if (node->getLeftChild())
+            return addNodeRecursive(node->getLeftChild(), value);
+
+        auto tmpNode = new TreeNode(node);
+        tmpNode->setValue(value);
+        node->setLeftChild(tmpNode);
+        return true;
+    } else {
+        if (node->getRightChild())
+            return addNodeRecursive(node->getRightChild(), value);
+
+        auto tmpNode = new TreeNode(node);
+        tmpNode->setValue(value);
+        node->setRightChild(tmpNode);
+        return true;
     }
-    return *this;
 }
 
 void BinaryTree::deleteSubtree(TreeNode *node)
 {
-    if (!node)
-        return;
-    for (TreeNode *child : node->getChildren()) {
-        deleteSubtree(child);
+    if (node) {
+        deleteSubtree(node->getLeftChild());
+        deleteSubtree(node->getRightChild());
+        delete node;
     }
-    delete node;
 }
 
 TreeNode *BinaryTree::copySubtree(TreeNode *node) const
 {
     if (!node)
         return nullptr;
-    TreeNode *newNode = new TreeNode(*node);
-    for (TreeNode *child : node->getChildren()) {
-        newNode->addChild(copySubtree(child));
-    }
-    return newNode;
+    TreeNode *copy = new TreeNode();
+    copy->setValue(node->getValue());
+    copy->setLeftChild(copySubtree(node->getLeftChild()));
+    copy->setRightChild(copySubtree(node->getRightChild()));
+    return copy;
 }
 
 int BinaryTree::calculateHeight(TreeNode *node) const
 {
     if (!node)
         return 0;
-    int height = 0;
-    for (TreeNode *child : node->getChildren()) {
-        height = std::max(height, calculateHeight(child));
-    }
-    return height + 1;
+    return 1
+           + std::max(calculateHeight(node->getLeftChild()),
+                      calculateHeight(node->getRightChild()));
 }
 
 int BinaryTree::countNodes(TreeNode *node) const
 {
     if (!node)
         return 0;
-    int count = 1;
-    for (TreeNode *child : node->getChildren()) {
-        count += countNodes(child);
-    }
-    return count;
+    return 1 + countNodes(node->getLeftChild()) + countNodes(node->getRightChild());
+}
+
+TreeNode *BinaryTree::findMin(TreeNode *node) const
+{
+    while (node && node->getLeftChild()) node = node->getLeftChild();
+    return node;
+}
+
+TreeNode *BinaryTree::findMax(TreeNode *node) const
+{
+    while (node && node->getRightChild()) node = node->getRightChild();
+    return node;
 }
 
 bool BinaryTree::checkBalance(TreeNode *node) const
 {
     if (!node)
         return true;
-    int leftHeight = calculateHeight(node->getChild(0));
-    int rightHeight = calculateHeight(node->getChild(1));
-    return std::abs(leftHeight - rightHeight) <= 1 && checkBalance(node->getChild(0))
-           && checkBalance(node->getChild(1));
+    int leftHeight = calculateHeight(node->getLeftChild());
+    int rightHeight = calculateHeight(node->getRightChild());
+    return std::abs(leftHeight - rightHeight) <= 1 && checkBalance(node->getLeftChild())
+           && checkBalance(node->getRightChild());
+}
+
+int BinaryTree::findLevel(TreeNode *node, int value, int level) const
+{
+    if (!node)
+        return -1;
+    if (node->getValue() == value)
+        return level;
+
+    int leftLevel = findLevel(node->getLeftChild(), value, level + 1);
+    if (leftLevel != -1)
+        return leftLevel;
+
+    return findLevel(node->getRightChild(), value, level + 1);
 }
 
 void BinaryTree::inOrderTraversal(TreeNode *node, std::vector<int> &keys) const
 {
-    if (node == nullptr) {
+    if (!node)
         return;
-    }
-    inOrderTraversal(node->getChild(0), keys);
+
+    inOrderTraversal(node->getLeftChild(), keys);
     keys.push_back(node->getValue());
-    inOrderTraversal(node->getChild(1), keys);
+    inOrderTraversal(node->getRightChild(), keys);
 }
 
 void BinaryTree::printHorizontal(TreeNode *node, int space) const
 {
+    const int INDENT = 4;
+
     if (!node)
         return;
 
-    const int SPACING = 5;
-    space += SPACING;
+    space += INDENT;
 
-    if (node->getChild(1))
-        printHorizontal(node->getChild(1), space);
+    printHorizontal(node->getRightChild(), space);
 
     std::cout << std::endl;
-    for (int i = SPACING; i < space; i++) std::cout << " ";
-    std::cout << node->getValue() << "\n";
+    for (int i = INDENT; i < space; i++) std::cout << " ";
+    std::cout << node->getValue() << std::endl;
 
-    if (node->getChild(0))
-        printHorizontal(node->getChild(0), space);
+    printHorizontal(node->getLeftChild(), space);
+}
+
+void BinaryTree::printLeavesRecursive(TreeNode *node) const
+{
+    if (!node)
+        return;
+
+    if (!node->getLeftChild() && !node->getRightChild()) {
+        std::cout << node->getValue() << " ";
+        return;
+    }
+
+    printLeavesRecursive(node->getLeftChild());
+    printLeavesRecursive(node->getRightChild());
 }

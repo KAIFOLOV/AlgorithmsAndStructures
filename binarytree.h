@@ -6,28 +6,28 @@
 class BinaryTree
 {
 public:
-    BinaryTree(TreeNode *root = nullptr);
-    BinaryTree(const BinaryTree &other); // Конструктор копирования
-    ~BinaryTree(); // Деструктор
+    BinaryTree();
+    BinaryTree(const BinaryTree &other);
+    ~BinaryTree();
 
-    // Основные методы
     TreeNode *getRoot() const;
-    void setRoot(TreeNode *newRoot);
 
     void clear();
     bool isEmpty() const;
 
-    bool addNode(const double &value); // Добавляет узел с заданным значением
-    bool deleteNode(const double &value); // Удаляет узел по ключу
-    TreeNode *findNode(const double &value) const; // Поиск узла по значению
+    TreeNode *findNode(const double &value) const;
+    bool addNode(const double &value);
+    bool deleteNode(const double &value);
 
     int getHeight() const;
     int getNodeCount() const;
-    double getMinKey() const;
-    double getMaxKey() const;
+
+    int getMinKey() const;
+    int getMaxKey() const;
 
     bool isBalanced() const;
-    int getLevel(double value) const;
+
+    int getLevel(int value) const;
 
     std::vector<int> getSortedKeys() const;
 
@@ -35,19 +35,31 @@ public:
     void printTreeByLevels() const;
     void printLeaves() const;
 
-    // Оператор присваивания
     BinaryTree &operator=(const BinaryTree &other);
 
 private:
-    TreeNode *_root;
+    TreeNode *_root = nullptr;
 
-    // Вспомогательные функции
+    TreeNode *findNodeRecursive(TreeNode *node, int value) const;
+    bool addNodeRecursive(TreeNode *node, const double &value);
+
     void deleteSubtree(TreeNode *node);
     TreeNode *copySubtree(TreeNode *node) const;
+
     int calculateHeight(TreeNode *node) const;
     int countNodes(TreeNode *node) const;
+
+    TreeNode *findMin(TreeNode *node) const;
+    TreeNode *findMax(TreeNode *node) const;
+
     bool checkBalance(TreeNode *node) const;
+
+    int findLevel(TreeNode *node, int value, int level) const;
+
     void inOrderTraversal(TreeNode *node, std::vector<int> &keys) const;
+
     void printHorizontal(TreeNode *node, int space) const;
+    void printLeavesRecursive(TreeNode *node) const;
 };
+
 #endif // BINARYTREE_H

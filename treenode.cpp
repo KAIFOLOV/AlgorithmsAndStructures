@@ -9,8 +9,8 @@ TreeNode::TreeNode(const TreeNode &other) : _parent(other._parent)
 
 TreeNode::~TreeNode()
 {
-    for (auto &child : _children) delete child;
-    _children.clear();
+    delete _left;
+    delete _right;
 }
 
 TreeNode &TreeNode::operator=(const TreeNode &other)
@@ -18,15 +18,17 @@ TreeNode &TreeNode::operator=(const TreeNode &other)
     if (this != &other) {
         _parent = other._parent;
 
-        for (TreeNode *child : _children) {
-            delete child;
-        }
-        _children.clear();
-        for (TreeNode *child : other._children) {
-            TreeNode *clonedChild = new TreeNode(*child);
-            clonedChild->setParent(this);
-            _children.push_back(clonedChild);
-        }
+        delete _left;
+        delete _right;
+
+        TreeNode *clonedLeftChild = new TreeNode(*other.getLeftChild());
+        TreeNode *clonedRightChild = new TreeNode(*other.getRightChild());
+
+        clonedLeftChild->setParent(this);
+        clonedRightChild->setParent(this);
+
+        _left = clonedLeftChild;
+        _right = clonedRightChild;
     }
     return *this;
 }
@@ -36,49 +38,19 @@ double TreeNode::getValue() const
     return _value;
 }
 
-void TreeNode::setValue(double newValue)
+void TreeNode::setValue(const double &newValue)
 {
     _value = newValue;
 }
 
-TreeNode *TreeNode::getChild(int index)
+void TreeNode::setLeftChild(TreeNode *left)
 {
-    if (index < _children.size())
-        return _children[index];
-
-    return nullptr;
+    _left = left;
 }
 
-std::vector<TreeNode *> TreeNode::getChildren() const
+void TreeNode::setRightChild(TreeNode *right)
 {
-    return _children;
-}
-
-int TreeNode::indexOfChild(TreeNode *node)
-{
-    auto it = std::find(_children.begin(), _children.end(), node);
-    if (it != _children.end()) {
-        return std::distance(_children.begin(), it);
-    }
-    return -1;
-}
-
-void TreeNode::addChild(TreeNode *child)
-{
-    _children.push_back(child);
-}
-
-void TreeNode::removeChild(TreeNode *child)
-{
-    auto ix = indexOfChild(child);
-    if (ix >= 0) {
-        _children.erase(_children.begin() + ix);
-    }
-}
-
-int TreeNode::childCount() const
-{
-    return _children.size();
+    _right = right;
 }
 
 void TreeNode::setParent(TreeNode *parent)
@@ -89,4 +61,14 @@ void TreeNode::setParent(TreeNode *parent)
 TreeNode *TreeNode::getParent() const
 {
     return _parent;
+}
+
+TreeNode *TreeNode::getLeftChild() const
+{
+    return _left;
+}
+
+TreeNode *TreeNode::getRightChild() const
+{
+    return _right;
 }
