@@ -27,6 +27,7 @@ TreeNode *BinaryTree::getRoot() const
 void BinaryTree::clear()
 {
     deleteSubtree(_root);
+    delete _root;
     _root = nullptr;
 }
 bool BinaryTree::isEmpty() const
@@ -184,9 +185,8 @@ bool BinaryTree::addNodeRecursive(TreeNode *node, const double &value)
 void BinaryTree::deleteSubtree(TreeNode *node)
 {
     if (node) {
-        deleteSubtree(node->getLeftChild());
-        deleteSubtree(node->getRightChild());
-        delete node;
+        delete node->getLeftChild();
+        delete node->getRightChild();
     }
 }
 
