@@ -16,6 +16,8 @@ add_executable(AlgorithmsAndStructures
   main.cpp
   multiphasesorter.h
   multiphasesorter.cpp
+  hashfunction.h hashfunction.cpp
+  hashtable.h hashtable.cpp
 )
 target_link_libraries(AlgorithmsAndStructures Qt${QT_VERSION_MAJOR}::Core)
 
