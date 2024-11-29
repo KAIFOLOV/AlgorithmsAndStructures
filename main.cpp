@@ -1,3 +1,4 @@
+#include "hashtable.h"
 #include "multiphasesorter.h"
 
 #include <fstream>
@@ -75,6 +76,20 @@ int createAndSortFile(const std::string &fileName, const int numbersCount, const
     return 1;
 }
 
+void testHash()
+{
+    HashTable table(10);
+
+    table.insert(1, "One");
+    table.insert(2, "Two");
+    table.insert(3, "Three");
+
+    std::cout << "Default hash function:" << std::endl;
+    table.printTable();
+
+    std::cout << table[1] << std::endl;
+}
+
 int main()
 {
     const std::string fileName = "kek.txt";
@@ -104,5 +119,8 @@ int main()
             break;
         }
     }
+
+    testHash();
+
     return 0;
 }
