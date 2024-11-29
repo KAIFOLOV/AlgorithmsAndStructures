@@ -8,7 +8,7 @@ class HashFunction
 public:
     virtual ~HashFunction() = default;
 
-    virtual size_t operator()(int key, size_t capacity) const = 0;
+    virtual size_t operator()(const int key, const size_t capacity) const = 0;
 };
 
 class DefaultHashFunction : public HashFunction
