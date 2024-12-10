@@ -71,33 +71,6 @@ public:
      */
     TreeNode *getRightChild() const;
 
-    // Child
-
-    /*!
-     * \brief Возвращает количество дочерних узлов.
-     * \return Количество дочерних узлов.
-     */
-    int childCount() const;
-
-    /*!
-     * \brief Добавляет дочерний узел.
-     * \param child Дочерний узел.
-     */
-    void addChild(TreeNode *);
-
-    /*!
-     * \brief Удаляет дочерний узел.
-     * \param child Дочерний узел.
-     */
-    void removeChild(TreeNode *child);
-
-    /*!
-     * \brief Возвращает индекс указанного узла среди дочерних узлов.
-     * \param node Узел, для которого ищется индекс.
-     * \return Индекс узла.
-     */
-    int indexOfChild(TreeNode *node);
-
     /*!
      * \brief Оператор присваивания.
      * \param other Другой узел, который присваивается.

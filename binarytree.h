@@ -60,6 +60,8 @@ private:
 
     void printHorizontal(TreeNode *node, int space) const;
     void printLeavesRecursive(TreeNode *node) const;
+
+    bool deleteNode(TreeNode *node);
 };
 
 #endif // BINARYTREE_H

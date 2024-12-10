@@ -50,36 +50,43 @@ bool BinaryTree::addNode(const double &value)
     return addNodeRecursive(_root, value);
 }
 
-bool BinaryTree::deleteNode(const double &value)
-{
+bool BinaryTree::deleteNode(const double &value) {
     TreeNode *node = findNode(value);
+    return deleteNode(node);
+}
+
+bool BinaryTree::deleteNode(TreeNode *node) {
     if (!node)
         return false;
 
+    // Случай 1: У узла нет потомков (лист)
     if (!node->getLeftChild() && !node->getRightChild()) {
         if (node == _root)
             _root = nullptr;
-
         else if (node->getParent()->getLeftChild() == node)
             node->getParent()->setLeftChild(nullptr);
         else
             node->getParent()->setRightChild(nullptr);
 
-    } else if (node->getLeftChild() && node->getRightChild()) {
+        delete node;
+        return true;
+    }
+
+    if (node->getLeftChild() && node->getRightChild()) {
         TreeNode *successor = findMin(node->getRightChild());
         node->setValue(successor->getValue());
-        return deleteNode(successor->getValue());
-
-    } else {
-        TreeNode *child = node->getLeftChild() ? node->getLeftChild() : node->getRightChild();
-        if (node == _root)
-            _root = child;
-        else if (node->getParent()->getLeftChild() == node)
-            node->getParent()->setLeftChild(child);
-        else
-            node->getParent()->setRightChild(child);
-        child->setParent(node->getParent());
+        return deleteNode(successor);
     }
+
+    TreeNode *child = node->getLeftChild() ? node->getLeftChild() : node->getRightChild();
+    if (node == _root)
+        _root = child;
+    else if (node->getParent()->getLeftChild() == node)
+        node->getParent()->setLeftChild(child);
+    else
+        node->getParent()->setRightChild(child);
+
+    child->setParent(node->getParent());
     delete node;
     return true;
 }
