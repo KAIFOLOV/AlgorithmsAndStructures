@@ -96,12 +96,23 @@ std::string &HashTable::operator[](int key)
     return (*this)[key];
 }
 
+const std::string &HashTable::operator[](int key) const
+{
+    size_t index = hash(key);
+    for (auto &node : _table[index]) {
+        if (node.key == key) {
+            return node.value;
+        }
+    }
+
+    throw std::runtime_error("Key not exist");
+}
+
 void HashTable::resize()
 {
-    std::vector<std::list<HashNode>> oldTable = _table;
     _capacity *= 2;
-    _table.clear();
-    _table.resize(_capacity);
+    std::vector<std::list<HashNode>> oldTable(_capacity);
+    _table.swap(oldTable);
     _currentSize = 0;
 
     for (const auto &chain : oldTable) {

@@ -30,6 +30,7 @@ public:
 
     HashTable &operator=(const HashTable &other);
     std::string &operator[](int key);
+    const std::string &operator[](int key) const;
 
     void printTable() const;
 
