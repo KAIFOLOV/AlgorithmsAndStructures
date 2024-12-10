@@ -3,6 +3,8 @@
 #include <fstream>
 #include <random>
 
+#include "binarytree.h"
+
 /// Генерирует файл с рандомными значениями в диапазоне от -maxNumberValue до maxNumberValue
 bool createFileWithRandomNumbers(const std::string &fileName,
                                  const int numbersCount,
@@ -75,6 +77,54 @@ int createAndSortFile(const std::string &fileName, const int numbersCount, const
     return 1;
 }
 
+void testTree()
+{
+    BinaryTree *tree = new BinaryTree();
+
+    tree->addNode(10);
+    tree->addNode(5);
+    tree->addNode(15);
+    tree->addNode(2);
+    tree->addNode(7);
+    tree->addNode(12);
+    tree->addNode(18);
+
+    std::cout << "Initial tree (Horizontal view):\n";
+    tree->printTreeHorizontally();
+
+    std::cout << "\nHeight Tree: " << tree->getHeight() << std::endl;
+    std::cout << "Count nodes: " << tree->getNodeCount() << std::endl;
+
+    std::cout << "Minimal value: " << tree->getMinKey() << std::endl;
+    std::cout << "Maximal value: " << tree->getMaxKey() << std::endl;
+
+    if (tree->isBalanced()) {
+        std::cout << "Tree balanced." << std::endl;
+    } else {
+        std::cout << "Tree not balanced." << std::endl;
+    }
+
+    std::vector<int> sortedKeys = tree->getSortedKeys();
+    std::cout << "Values tree ascending order : ";
+    for (int key : sortedKeys) {
+        std::cout << key << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Leaves: ";
+    tree->printLeaves();
+
+    std::cout << "\nDelete node with value = 7." << std::endl;
+    if (tree->deleteNode(7)) {
+        std::cout << "Node 7 delete." << std::endl;
+    } else {
+        std::cout << "Node 7 not found." << std::endl;
+    }
+
+    std::cout << "Tree after delete 7:\n";
+    tree->printTreeHorizontally();
+}
+
 int main()
 {
     const std::string fileName = "kek.txt";
@@ -104,5 +154,8 @@ int main()
             break;
         }
     }
+
+    testTree();
+
     return 0;
 }
