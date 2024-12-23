@@ -16,6 +16,8 @@ add_executable(AlgorithmsAndStructures
   main.cpp
   multiphasesorter.h
   multiphasesorter.cpp
+  hashfunction.h hashfunction.cpp
+  hashtable.h hashtable.cpp
   treenode.h treenode.cpp
   binarytree.h binarytree.cpp
 )
