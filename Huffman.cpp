@@ -4,22 +4,22 @@
 #include <fstream>
 #include <queue>
 
-HuffmanCoder::HuffmanCoder() : _root(nullptr)
+Huffman::Huffman() : _root(nullptr)
 {}
 
-HuffmanCoder::~HuffmanCoder()
+Huffman::~Huffman()
 {
     clearTree();
 }
 
-void HuffmanCoder::clearTree()
+void Huffman::clearTree()
 {
     delete _root;
     _codes.clear();
     _reverseCodes.clear();
 }
 
-void HuffmanCoder::build(const std::string &input)
+void Huffman::build(const std::string &input)
 {
     clearTree();
 
@@ -60,7 +60,7 @@ void HuffmanCoder::build(const std::string &input)
     generateCodes(_root, currentCode);
 }
 
-void HuffmanCoder::generateCodes(HuffmanNode *node, std::vector<bool> &currentCode)
+void Huffman::generateCodes(HuffmanNode *node, std::vector<bool> &currentCode)
 {
     if (!node)
         return;
@@ -79,7 +79,7 @@ void HuffmanCoder::generateCodes(HuffmanNode *node, std::vector<bool> &currentCo
     }
 }
 
-int HuffmanCoder::encodeFile(const std::string &inputFile, const std::string &outputFile)
+int Huffman::encodeFile(const std::string &inputFile, const std::string &outputFile)
 {
     std::string input = readFile(inputFile);
     if (input.empty())
@@ -99,7 +99,7 @@ int HuffmanCoder::encodeFile(const std::string &inputFile, const std::string &ou
                             * 100);
 }
 
-bool HuffmanCoder::decodeFile(const std::string &inputFile, const std::string &outputFile)
+bool Huffman::decodeFile(const std::string &inputFile, const std::string &outputFile)
 {
     auto encodedData = readBinaryFile(inputFile);
     if (encodedData.empty() || _reverseCodes.empty())
@@ -124,7 +124,7 @@ bool HuffmanCoder::decodeFile(const std::string &inputFile, const std::string &o
     return true;
 }
 
-std::string HuffmanCoder::readFile(const std::string &filePath)
+std::string Huffman::readFile(const std::string &filePath)
 {
     std::ifstream inFile(filePath, std::ios::in | std::ios::binary);
     if (!inFile)
@@ -133,7 +133,7 @@ std::string HuffmanCoder::readFile(const std::string &filePath)
     return std::string(std::istreambuf_iterator<char>(inFile), std::istreambuf_iterator<char>());
 }
 
-void HuffmanCoder::writeBinaryFile(const std::string &filePath, const std::vector<bool> &data)
+void Huffman::writeBinaryFile(const std::string &filePath, const std::vector<bool> &data)
 {
     std::ofstream outFile(filePath, std::ios::out | std::ios::binary);
     if (!outFile)
@@ -148,7 +148,7 @@ void HuffmanCoder::writeBinaryFile(const std::string &filePath, const std::vecto
     }
 }
 
-std::vector<bool> HuffmanCoder::readBinaryFile(const std::string &filePath)
+std::vector<bool> Huffman::readBinaryFile(const std::string &filePath)
 {
     std::ifstream inFile(filePath, std::ios::in | std::ios::binary);
     if (!inFile)

@@ -6,11 +6,11 @@
 #include <string>
 #include <unordered_map>
 
-class HuffmanCoder
+class Huffman
 {
 public:
-    HuffmanCoder();
-    ~HuffmanCoder();
+    Huffman();
+    ~Huffman();
 
     void build(const std::string &input);
     int encodeFile(const std::string &inputFile, const std::string &outputFile);

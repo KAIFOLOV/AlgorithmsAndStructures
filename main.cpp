@@ -126,6 +126,23 @@ void testTree()
     tree->printTreeHorizontally();
 }
 
+void testHuffman()
+{
+    Huffman huffman;
+
+    std::ofstream inputFile("input.txt");
+    inputFile << "Pupa and Lupa poshli get zarplata";
+    inputFile.close();
+
+    huffman.encodeFile("input.txt", "encoded.bin");
+    huffman.decodeFile("encoded.bin", "decoded.txt");
+
+    std::ifstream decodedFile("decoded.txt");
+    std::string decodedText((std::istreambuf_iterator<char>(decodedFile)),
+                            std::istreambuf_iterator<char>());
+    std::cout << "Decoded text: " << decodedText << std::endl;
+}
+
 int main()
 {
     const std::string fileName = "kek.txt";
@@ -157,14 +174,7 @@ int main()
     }
 
     testTree();
-
-    HuffmanCoder huffman;
-
-    // Кодирование файла
-    huffman.encodeFile("input.txt", "encoded.bin");
-
-    // Декодирование файла
-    huffman.decodeFile("encoded.bin", "decoded.txt");
+    testHuffman();
 
     return 0;
 }
