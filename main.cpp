@@ -3,6 +3,7 @@
 #include <fstream>
 #include <random>
 
+#include "Huffman.h"
 #include "binarytree.h"
 
 /// Генерирует файл с рандомными значениями в диапазоне от -maxNumberValue до maxNumberValue
@@ -156,6 +157,14 @@ int main()
     }
 
     testTree();
+
+    HuffmanCoder huffman;
+
+    // Кодирование файла
+    huffman.encodeFile("input.txt", "encoded.bin");
+
+    // Декодирование файла
+    huffman.decodeFile("encoded.bin", "decoded.txt");
 
     return 0;
 }
