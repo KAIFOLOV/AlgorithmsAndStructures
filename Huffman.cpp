@@ -15,8 +15,8 @@ HuffmanCoder::~HuffmanCoder()
 void HuffmanCoder::clearTree()
 {
     delete _root;
-    codes.clear();
-    reverseCodes.clear();
+    _codes.clear();
+    _reverseCodes.clear();
 }
 
 void HuffmanCoder::build(const std::string &input)
@@ -66,8 +66,8 @@ void HuffmanCoder::generateCodes(HuffmanNode *node, std::vector<bool> &currentCo
         return;
 
     if (!node->getLeftChild() && !node->getRightChild()) {
-        codes[node->symbol()] = currentCode;
-        reverseCodes[currentCode] = node->symbol();
+        _codes[node->symbol()] = currentCode;
+        _reverseCodes[currentCode] = node->symbol();
     } else {
         currentCode.push_back(false);
         generateCodes(static_cast<HuffmanNode *>(node->getLeftChild()), currentCode);
@@ -85,12 +85,12 @@ int HuffmanCoder::encodeFile(const std::string &inputFile, const std::string &ou
     if (input.empty())
         return -1;
 
-    if (codes.empty())
+    if (_codes.empty())
         build(input);
 
     std::vector<bool> encodedData;
-    for (char c : input) {
-        const auto &code = codes[c];
+    for (char symbol : input) {
+        const auto &code = _codes[symbol];
         encodedData.insert(encodedData.end(), code.begin(), code.end());
     }
 
@@ -102,15 +102,15 @@ int HuffmanCoder::encodeFile(const std::string &inputFile, const std::string &ou
 bool HuffmanCoder::decodeFile(const std::string &inputFile, const std::string &outputFile)
 {
     auto encodedData = readBinaryFile(inputFile);
-    if (encodedData.empty() || reverseCodes.empty())
+    if (encodedData.empty() || _reverseCodes.empty())
         return false;
 
     std::string decodedData;
     std::vector<bool> currentCode;
     for (bool bit : encodedData) {
         currentCode.push_back(bit);
-        if (reverseCodes.count(currentCode)) {
-            decodedData += reverseCodes[currentCode];
+        if (_reverseCodes.count(currentCode)) {
+            decodedData += _reverseCodes[currentCode];
             currentCode.clear();
         }
     }

@@ -18,8 +18,8 @@ public:
 
 private:
     HuffmanNode *_root;
-    std::unordered_map<char, std::vector<bool>> codes;
-    std::unordered_map<std::vector<bool>, char> reverseCodes;
+    std::unordered_map<char, std::vector<bool>> _codes;
+    std::unordered_map<std::vector<bool>, char> _reverseCodes;
 
     void generateCodes(HuffmanNode *node, std::vector<bool> &currentCode);
     void clearTree();
