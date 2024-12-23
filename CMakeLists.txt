@@ -18,6 +18,8 @@ add_executable(AlgorithmsAndStructures
   multiphasesorter.cpp
   hashfunction.h hashfunction.cpp
   hashtable.h hashtable.cpp
+  treenode.h treenode.cpp
+  binarytree.h binarytree.cpp
 )
 target_link_libraries(AlgorithmsAndStructures Qt${QT_VERSION_MAJOR}::Core)
 
